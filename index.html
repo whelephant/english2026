@@ -538,6 +538,36 @@
     border-top: 1px solid var(--border); margin-top: 2rem;
     font-style: italic;
   }
+
+  /* ── INTRO BLOCK ── */
+.intro-block {
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--sepia);
+  border-radius: 3px;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1.8rem;
+  font-family: 'Crimson Pro', serif;
+}
+
+.intro-block h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+}
+
+.intro-block p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink-mid);
+  margin-bottom: 0.5rem;
+}
+
+.intro-block p:last-child {
+  margin-bottom: 0;
+}
 </style>
 </head>
 <body>
@@ -581,6 +611,13 @@
   </nav>
   <main>
     <div class="panel active" id="panel-schedule">
+      <!-- INTRO BLOCK (dynamic) -->
+<div class="intro-block">
+  <h2>Welcome</h2>
+  <div id="intro-text">
+    <span class="spinner"></span> Loading introduction…
+  </div>
+</div>
       <div class="section-head"><h2>Course Schedule</h2></div>
       <div id="schedule-content"><div class="empty-state"><span class="spinner"></span> Loading schedule…</div></div>
     </div>
@@ -611,6 +648,24 @@
     <button class="btn-outline" onclick="showScreen('screen-app')">← Exit Admin</button>
   </div>
   <div class="admin-main">
+    <!-- INTRO EDITOR -->
+<div class="admin-section">
+  <div class="admin-section-head">
+    <h3>Website Introduction</h3>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <span class="save-status" id="intro-saved">✓ Saved</span>
+      <button class="btn-save" onclick="saveIntro()">Save</button>
+    </div>
+  </div>
+
+  <div style="padding:1rem 1.5rem;">
+    <textarea 
+      id="admin-intro-text" 
+      class="admin-textarea" 
+      placeholder="Write the homepage introduction here... (supports **bold**, *italic*, [links](url))"
+    ></textarea>
+  </div>
+</div>
     <div class="admin-section">
       <div class="admin-section-head">
         <h3>Schedule</h3>
@@ -690,7 +745,7 @@ function showScreen(id) {
 
 // ── STARTUP ───────────────────────────────────────────────────────────
 (async () => {
-  await Promise.all([loadSchedule(), loadHomework()]);
+  await Promise.all([loadSchedule(), loadHomework(), loadIntro()]);
 })();
 
 // ── ADMIN ─────────────────────────────────────────────────────────────
@@ -915,6 +970,7 @@ async function loadAdminData() {
   ]);
   renderAdminSchedule(schedRes.data || []);
   renderAdminHomework(hwRes.data || []);
+  await loadAdminIntro();
 }
 
 // ── ADMIN: SCHEDULE ───────────────────────────────────────────────────
@@ -1040,7 +1096,53 @@ function moveSchedRow(i, dir) {
   if (dir===-1 && pos>0) { [schedData[i],schedData[vis[pos-1]]]=[schedData[vis[pos-1]],schedData[i]]; redrawSchedTable(); }
   else if (dir===1 && pos<vis.length-1) { [schedData[i],schedData[vis[pos+1]]]=[schedData[vis[pos+1]],schedData[i]]; redrawSchedTable(); }
 }
+// ── INTRO (public) ─────────────────────────────────────────
+async function loadIntro() {
+  const { data, error } = await sb
+    .from('site_content')
+    .select('value')
+    .eq('key', 'intro_text')
+    .single();
 
+  const el = document.getElementById('intro-text');
+
+  if (error || !data) {
+    el.innerHTML = 'Welcome to the course.';
+    return;
+  }
+
+  el.innerHTML = formatNotes(data.value);
+}
+
+// ── ADMIN: INTRO ───────────────────────────────────────────
+async function loadAdminIntro() {
+  const { data } = await sb
+    .from('site_content')
+    .select('value')
+    .eq('key', 'intro_text')
+    .single();
+
+  document.getElementById('admin-intro-text').value = data?.value || '';
+}
+
+async function saveIntro() {
+  const text = document.getElementById('admin-intro-text').value;
+  const status = document.getElementById('intro-saved');
+
+  const { error } = await sb
+    .from('site_content')
+    .upsert({ key: 'intro_text', value: text });
+
+  if (error) {
+    alert('Save failed: ' + error.message);
+    return;
+  }
+
+  status.classList.add('show');
+  setTimeout(() => status.classList.remove('show'), 2500);
+
+  await loadIntro();
+}
 async function saveSchedule() {
   const statusEl = document.getElementById('sched-saved');
   const toDelete = schedData.filter(r => r._deleted && r.id);
