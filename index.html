@@ -679,7 +679,7 @@
         <thead><tr>
           <th style="width:65px">Term</th>
           <th style="width:55px">Week #</th>
-          <th style="width:95px">Week Commencing</th>
+          <th style="width:95px">Lesson Date</th>
           <th>Content / Topic</th>
           <th>Homework / Reading</th>
           <th>Notes</th>
@@ -860,7 +860,7 @@ function renderSchedule(rows) {
 
     html += `<div class="term-block"><div class="term-label ${cls}">${label}</div>
     <table class="schedule-table"><thead><tr>`;
-    if (hasDates) html += `<th>Week Commencing</th>`;
+    if (hasDates) html += `<th>Lesson Date</th>`;
     html += `<th>Week</th><th>Content / Topic</th><th>Homework / Reading</th>`;
     if (hasVcaa)    html += `<th>Assessment</th>`;
     if (hasYoutube) html += `<th>Recording</th>`;
